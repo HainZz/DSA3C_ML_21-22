@@ -1,5 +1,4 @@
 import numpy as np
-import sys
 
 #NOTES: Weights = [n1=[w1,w2,w3..,wX]n2=[w1,w2,w3,....,wX]...,nx=[w1,w2,...,wX]] 
 # n = Neuron, w=Weight
@@ -23,9 +22,7 @@ class Layer:
         return self.function
 
     def forward(self,InputArray):
-        x = np.dot(self.weights, InputArray) + self.bias #Here we can perform a dot product in order to work out
-        self.function(x)
+        x = np.dot(self.weights, InputArray) + self.bias #Here we can perform a dot product in order to work out the weighted sum + bias for each neuron
+        #print(x)
+        x = self.function(x)
         return x
-
-def main():
-    pass

@@ -2,8 +2,7 @@ import unittest
 import sys
 import numpy as np
 sys.path.append("../src")
-# from sample import Layer
-from source import Layer
+from NNLayer import Layer
 
 identity = np.vectorize(lambda x:x)
 

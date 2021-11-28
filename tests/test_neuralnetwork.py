@@ -4,8 +4,8 @@ import numpy as np
 sys.path.append("../src")
 # from sample import Layer
 # from sample import NeuralNetwork
-from source import Layer
-from source import NeuralNetwork
+from NNLayer import Layer
+from NNetwork import NeuralNetwork
 
 identity = np.vectorize(lambda x:x)
 square = np.sqrt

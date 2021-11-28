@@ -3,10 +3,10 @@ import sys
 import numpy as np
 import random
 sys.path.append("../src")
-# from sample import NNPlayer
-# from sample import NeuralNetwork
-from source import NNPlayer
-from source import NeuralNetwork
+#from sample import NNPlayer
+#from sample import NeuralNetwork
+from NNPlayer import NNPlayer
+from NNetwork import NeuralNetwork
 
 identity = np.vectorize(lambda x:x)
 

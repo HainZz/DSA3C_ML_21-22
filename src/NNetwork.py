@@ -18,6 +18,8 @@ class NeuralNetwork:
         for weight,bias,function in LayerInfo:
             if Count < len(LayerInfo): #Ensures we dont cause an IndexError
                 if weight.shape[0] != LayerInfo[Count][0].shape[1]: #If the number of neurons does not = the number of weights output of the layer can not be used
+                    print(weight.shape[0])
+                    print(LayerInfo[Count][0].shape[1])
                     raise ValueError("Mismatch Matrix")
             layer = Layer(weight,bias,function)
             self.Layers.append(layer)

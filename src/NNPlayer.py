@@ -19,7 +19,6 @@ class NNPlayer:
         for move in Result:
             Result[Counter] = int(math.floor(move))
             Counter += 1
-        print(list(map(int,Result)))
         return list(map(int,Result))
 
     def getNN(self):

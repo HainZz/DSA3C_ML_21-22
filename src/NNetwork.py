@@ -1,6 +1,6 @@
 
 from NNLayer import Layer
-
+import sys
 class NeuralNetwork:
     def __init__(self,Weights,Biases,Functions):
         WeightsLength = len(Weights)
@@ -9,6 +9,7 @@ class NeuralNetwork:
         if WeightsLength == BiasesLength == FunctionsLength: #Function for checking lengths of list match
             pass
         else:
+            print(Biases)
             raise ValueError("Lists are not off the same length")
         self.Layers = [] #Array of layer objects i.e [InputLayer,HiddenLayers,OutPutLayer]
         ##SOURCE: https://www.geeksforgeeks.org/python-pair-iteration-in-list/

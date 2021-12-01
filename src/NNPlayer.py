@@ -9,6 +9,9 @@ class NNPlayer:
     def getSpecs():
         return (27,3) #Current spec 27 inputs repersenting each position on the board. The Value is the difference betweeen the players pips and the enemies at that position
 
+    def SetFitness(self,FitnessScore):
+        self.FitnessScore = FitnessScore
+
     def play(self,myBoard,OpponentBoard,myScore,OpponentScore,turn,GameLength,pips):
         MyNPBoard = np.array(myBoard)
         OpNPBoard = np.array(OpponentBoard)

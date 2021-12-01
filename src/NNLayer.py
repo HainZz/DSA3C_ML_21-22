@@ -9,7 +9,7 @@ class Layer:
         self.bias = np.copy(Biases)
         self.function = ActivationFunction
         neurons = self.weights.shape[0] #Gets the number of neurons bassed off the number of columns in matrix
-        if neurons != len(self.bias): #If number of neurons + biases are not = then either a neuron dosent have a bias or vice versa
+        if len(self.weights) != len(self.bias): #If number of neurons + biases are not = then either a neuron dosent have a bias or vice versa
             raise ValueError("Incorrect Dimensions For Weights and Biases")
 
     def getMatrix(self):

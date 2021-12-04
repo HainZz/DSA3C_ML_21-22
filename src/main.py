@@ -13,16 +13,16 @@ from multiprocessing import Pool,cpu_count, pool
 ##CONSTANT VARIABLES - Paramaters for the NN 
 INPUT_NEURONS = 27
 HLAYER_NEURONS = 15
-OUTPUT_NEURONS = 3
-CURRENT_GENERATION_FILE = "Generations/GENERATION_V1.pkl"
-CURRENT_BESTPLAYER_FILE = "BestPlayer/BP_V1.pkl"
+OUTPUT_NEURONS = 9
+CURRENT_GENERATION_FILE = "Generations/GENERATION_2.pkl"
+CURRENT_BESTPLAYER_FILE = "BestPlayer/BP_V2.pkl"
 POPULATION_SIZE = 1000
 ELITE_PLAYER_PERCANTAGE = 10
-NEURON_MUTATION_CHANCE = 0.20
-GENERATIONS_COUNT = 1000
+NEURON_MUTATION_CHANCE = 0.40
+GENERATIONS_COUNT = 100
 PARENTS_IN_GENE_POOL = 200
 #Ensures a more accurate fitness score so a lucky game != lucky fitness when actually genes are bad.
-NO_OF_GAMES_FOR_FITNESS = 10
+NO_OF_GAMES_FOR_FITNESS = 20
 MAX = 5
 MIN = -5
 #CURRENT ACTIVIATION FUNCTION
@@ -34,12 +34,12 @@ def relu(Function_Input):
 ##SOURCE: https://stackoverflow.com/questions/22071987/generate-random-array-of-floats-between-a-range
 #SOURCE: https://stackoverflow.com/questions/5891410/numpy-array-initialization-fill-with-identical-values
 def InitializeNeuralNetworkWB():
-    weights = np.array([np.random.randint(MIN,MAX,size = (HLAYER_NEURONS,INPUT_NEURONS)),
-    np.random.randint(MIN,MAX,size = (OUTPUT_NEURONS,HLAYER_NEURONS))],dtype=object)
+    weights = np.array([np.random.uniform(HLAYER_NEURONS,HLAYER_NEURONS-1,size = (HLAYER_NEURONS,INPUT_NEURONS)),
+    np.random.uniform(OUTPUT_NEURONS,OUTPUT_NEURONS-1,size = (OUTPUT_NEURONS,HLAYER_NEURONS))],dtype=object)
     n = 0
-    # for LayerWeights in weights:
-    #     weights[n] = LayerWeights * np.sqrt(2/len(LayerWeights-1)) # * each weight with the sqrt of 2/size of layer - 1#
-    #     n+= 1
+    for LayerWeights in weights:
+        weights[n] = LayerWeights * np.sqrt(2/len(LayerWeights-1)) # * each weight with the sqrt of 2/size of layer - 1#
+        n+= 1
     bias = np.array([np.zeros(HLAYER_NEURONS),np.zeros(OUTPUT_NEURONS)],dtype=object) #Initialize bias of 0
     functions = np.full((2),relu) #Fill our functions list with all RELU for now. We can experiment using a combination of functions later
     return weights,bias,functions
@@ -101,12 +101,11 @@ def PerformOnePointCrossovers(Parent1Weight,Parent2Weight,Parent1Bias,Parent2Bia
 
 def OnePointCrossover(generation,GenerationCount,NewGeneration):
     TotalPopulaton = POPULATION_SIZE - (ELITE_PLAYER_PERCANTAGE * POPULATION_SIZE / 100)
-    cr = 1 - (GenerationCount/GENERATIONS_COUNT)
+    cr = GenerationCount/GENERATIONS_COUNT
     c = cr * TotalPopulaton
     matingPool = BiasedRoluetteSelection(generation)
     matingPool = np.array(matingPool).flatten()
     Layers = []
-    print(round(c))
     for i in range(round(c)): #Produce 90 children every crossover produces 2 children hence we do 45 crossovers.
         ChildFunctions = []
         Child1Weights = []
@@ -146,10 +145,10 @@ def AddElite(generation):
 #SOURCE: https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwiaqKulkcj0AhUCQEEAHWEoB0gQFnoECAoQAQ&url=https%3A%2F%2Fwww.mdpi.com%2F2078-2489%2F10%2F12%2F390%2Fpdf&usg=AOvVaw2uUvABCH2wTtCCVeDF8Vlp
 def Mutation(Population,GenerationCount,generation):
     TotalPopulaton = POPULATION_SIZE - (ELITE_PLAYER_PERCANTAGE * POPULATION_SIZE / 100)
-    MR = GenerationCount/GENERATIONS_COUNT
+    MR = 1 - (GenerationCount/GENERATIONS_COUNT)
     NoOfMutatedPopulation = MR * TotalPopulaton
     mutation_pool = BiasedRoluetteSelection(generation)[0]
-    for x in range(900):
+    for x in range(round(NoOfMutatedPopulation)):
         MutatedChild = np.random.choice(mutation_pool,1,replace=False) #Pick unique children to mutate 
         NeuralObject = MutatedChild[0].getNN()
         Weights = np.copy(NeuralObject.Weights)
@@ -159,11 +158,11 @@ def Mutation(Population,GenerationCount,generation):
             for NeuronIndex,Neuron in enumerate(Layer):
                 for WeightIndex,Weight in enumerate(Neuron):
                     if random.random() < NEURON_MUTATION_CHANCE:
-                        Weights[LayerWeightIndex][NeuronIndex][WeightIndex] = Weight - random.randint(-1.0,1.0)
+                        Weights[LayerWeightIndex][NeuronIndex][WeightIndex] = Weight - random.uniform(-1.0,1.0)
         for LayerBiasIndex,LayerBias in enumerate(Biases):
             for BiasIndex,bias in enumerate(LayerBias):
                 if random.random() < NEURON_MUTATION_CHANCE:
-                    Biases[LayerBiasIndex][BiasIndex] = bias - random.randint(-1.0,1.0)
+                    Biases[LayerBiasIndex][BiasIndex] = bias - random.uniform(-1.0,1.0)
         MutatedOffSpring = NNPlayer(Weights,Biases,Functions)
         Population.append(MutatedOffSpring)
     return Population
@@ -172,6 +171,7 @@ def Mutation(Population,GenerationCount,generation):
 
 def train():
     FitnessScoreY = []
+    bpY = []
     GenerationCountX = []
     GenerationCount = 0
     for x in range(GENERATIONS_COUNT): #Train for a X generations.
@@ -186,6 +186,7 @@ def train():
         FitnessArray = []
         for player in OrderedGeneration:
             FitnessArray.append(player.FitnessScore)
+        bpY.append(BestPlayer.FitnessScore)
         AF = statistics.mean(FitnessArray)
         FitnessScoreY.append(AF)
         GenerationCountX.append(GenerationCount)
@@ -194,12 +195,8 @@ def train():
         BestPlayer_File.close()
         #Generate New Generation
         NewGeneration = AddElite(generation)
-        print(len(NewGeneration))
-        #NewGeneration = OnePointCrossover(generation,GenerationCount,NewGeneration)
-        print(len(NewGeneration))
+        NewGeneration = OnePointCrossover(generation,GenerationCount,NewGeneration)
         NewGeneration = Mutation(NewGeneration,GenerationCount,generation)
-        print(len(NewGeneration))
-        print("---------------------")
         #Assign Fitness Scores To Next Generation
         with Pool() as pool:
             NewGeneration = pool.map(play_game,NewGeneration)
@@ -211,13 +208,15 @@ def train():
         print(GenerationCount)
     #Benchmark Best Player
     test()
-    Plot(GenerationCountX,FitnessScoreY)
+    Plot(GenerationCountX,FitnessScoreY,bpY)
 
-def Plot(X,Y):
-    plt.plot(X,Y,marker="o")
+def Plot(X,Y,bpy):
+    plt.plot(X,Y,marker=".")
+    plt.plot(X,bpy,marker="o")
     plt.xlabel("Generations")
     plt.ylabel("Average Fitness Score")
     plt.title("Average Fitness Score Over Generations")
+    plt.legend([])
     plt.show()
 
 #Designed as a benchmark for the Best Player
@@ -243,7 +242,7 @@ def test():
         score = game.play()
         ScoreDifference = score[0] - score[1]
         RandomPlayerAverageScore.append(ScoreDifference)
-        if ScoreDifference <= 0:
+        if ScoreDifference > 0:
             RandomPlayerWL[0] += 1
         else:
             RandomPlayerWL[1] += 1

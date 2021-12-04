@@ -23,6 +23,8 @@ GENERATIONS_COUNT = 1000
 PARENTS_IN_GENE_POOL = 200
 #Ensures a more accurate fitness score so a lucky game != lucky fitness when actually genes are bad.
 NO_OF_GAMES_FOR_FITNESS = 10
+MAX = 5
+MIN = -5
 #CURRENT ACTIVIATION FUNCTION
 def relu(Function_Input):
     return np.maximum(0.0,Function_Input)
@@ -32,12 +34,12 @@ def relu(Function_Input):
 ##SOURCE: https://stackoverflow.com/questions/22071987/generate-random-array-of-floats-between-a-range
 #SOURCE: https://stackoverflow.com/questions/5891410/numpy-array-initialization-fill-with-identical-values
 def InitializeNeuralNetworkWB():
-    weights = np.array([np.random.uniform(HLAYER_NEURONS,HLAYER_NEURONS-1,size = (HLAYER_NEURONS,INPUT_NEURONS)),
-    np.random.uniform(OUTPUT_NEURONS,OUTPUT_NEURONS-1,size = (OUTPUT_NEURONS,HLAYER_NEURONS))],dtype=object)
+    weights = np.array([np.random.randint(MIN,MAX,size = (HLAYER_NEURONS,INPUT_NEURONS)),
+    np.random.randint(MIN,MAX,size = (OUTPUT_NEURONS,HLAYER_NEURONS))],dtype=object)
     n = 0
-    for LayerWeights in weights:
-        weights[n] = LayerWeights * np.sqrt(2/len(LayerWeights-1)) # * each weight with the sqrt of 2/size of layer - 1#
-        n+= 1
+    # for LayerWeights in weights:
+    #     weights[n] = LayerWeights * np.sqrt(2/len(LayerWeights-1)) # * each weight with the sqrt of 2/size of layer - 1#
+    #     n+= 1
     bias = np.array([np.zeros(HLAYER_NEURONS),np.zeros(OUTPUT_NEURONS)],dtype=object) #Initialize bias of 0
     functions = np.full((2),relu) #Fill our functions list with all RELU for now. We can experiment using a combination of functions later
     return weights,bias,functions
@@ -104,6 +106,7 @@ def OnePointCrossover(generation,GenerationCount,NewGeneration):
     matingPool = BiasedRoluetteSelection(generation)
     matingPool = np.array(matingPool).flatten()
     Layers = []
+    print(round(c))
     for i in range(round(c)): #Produce 90 children every crossover produces 2 children hence we do 45 crossovers.
         ChildFunctions = []
         Child1Weights = []
@@ -156,11 +159,11 @@ def Mutation(Population,GenerationCount,generation):
             for NeuronIndex,Neuron in enumerate(Layer):
                 for WeightIndex,Weight in enumerate(Neuron):
                     if random.random() < NEURON_MUTATION_CHANCE:
-                        Weights[LayerWeightIndex][NeuronIndex][WeightIndex] = Weight - random.uniform(-1.0,1.0)
+                        Weights[LayerWeightIndex][NeuronIndex][WeightIndex] = Weight - random.randint(-1.0,1.0)
         for LayerBiasIndex,LayerBias in enumerate(Biases):
             for BiasIndex,bias in enumerate(LayerBias):
                 if random.random() < NEURON_MUTATION_CHANCE:
-                    Biases[LayerBiasIndex][BiasIndex] = bias - random.uniform(-1.0,1.0)
+                    Biases[LayerBiasIndex][BiasIndex] = bias - random.randint(-1.0,1.0)
         MutatedOffSpring = NNPlayer(Weights,Biases,Functions)
         Population.append(MutatedOffSpring)
     return Population
@@ -191,8 +194,12 @@ def train():
         BestPlayer_File.close()
         #Generate New Generation
         NewGeneration = AddElite(generation)
+        print(len(NewGeneration))
         #NewGeneration = OnePointCrossover(generation,GenerationCount,NewGeneration)
+        print(len(NewGeneration))
         NewGeneration = Mutation(NewGeneration,GenerationCount,generation)
+        print(len(NewGeneration))
+        print("---------------------")
         #Assign Fitness Scores To Next Generation
         with Pool() as pool:
             NewGeneration = pool.map(play_game,NewGeneration)

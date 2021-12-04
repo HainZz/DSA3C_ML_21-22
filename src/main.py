@@ -70,6 +70,7 @@ def main():
     ##PICKLE Initial Generation
     #By saving the generations if we stop training we can continue training using the existing model rather than restarting every time.
     pickle_file = open(CURRENT_GENERATION_FILE,"wb")
+    InitialPopulation.append(0)
     pickle.dump(InitialPopulation,pickle_file)
     pickle_file.close()
     train()
@@ -174,6 +175,7 @@ def train():
         GenerationCount += 1
         Generation_File = open(CURRENT_GENERATION_FILE,"rb")
         generation = pickle.load(Generation_File)
+	generation.pop()
         Generation_File.close()
         #Save Best Player From Prievous Generation
         OrderedGeneration = sorted(generation, key=lambda x: x.FitnessScore, reverse=True)
@@ -195,9 +197,11 @@ def train():
         with Pool() as pool:
             NewGeneration = pool.map(play_game,NewGeneration)
         #Pickle Next Generation
+	NewGeneration.append(GenerationCount)
         pickle_file = open(CURRENT_GENERATION_FILE,"wb")
         pickle.dump(NewGeneration,pickle_file)
         pickle_file.close()
+	print(GenerationCount)
     #Benchmark Best Player
     test()
     Plot(GenerationCountX,FitnessScoreY)

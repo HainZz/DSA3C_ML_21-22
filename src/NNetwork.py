@@ -3,6 +3,9 @@ from NNLayer import Layer
 import sys
 class NeuralNetwork:
     def __init__(self,Weights,Biases,Functions):
+        self.Weights = Weights
+        self.Biases = Biases
+        self.Functions = Functions
         WeightsLength = len(Weights)
         BiasesLength = len(Biases)
         FunctionsLength = len(Functions)

@@ -14,17 +14,19 @@ from multiprocessing import Pool,cpu_count, pool
 INPUT_NEURONS = 27
 HLAYER_NEURONS = 15
 OUTPUT_NEURONS = 9
-CURRENT_GENERATION_FILE = "Generations/GENERATION_2.pkl"
-CURRENT_BESTPLAYER_FILE = "BestPlayer/BP_V2.pkl"
-POPULATION_SIZE = 1000
+CURRENT_GENERATION_FILE = "Generations/GENERATION_V3_COMP_LP_RANDOM_PLAYER%.pkl"
+CURRENT_BESTPLAYER_FILE = "BestPlayer/BP_V3_COMP_LP_RANDOM_PLAYER%.pkl"
+POPULATION_SIZE = 100
 ELITE_PLAYER_PERCANTAGE = 10
 NEURON_MUTATION_CHANCE = 0.40
 GENERATIONS_COUNT = 100
-PARENTS_IN_GENE_POOL = 200
+PARENTS_IN_GENE_POOL = 20
 #Ensures a more accurate fitness score so a lucky game != lucky fitness when actually genes are bad.
-NO_OF_GAMES_FOR_FITNESS = 20
-MAX = 5
-MIN = -5
+#NO_OF_GAMES_FOR_FITNESS = 20 #Remeber this value is multiplied by 4 for each player
+RANDOM_GAMES_PLAYED = 100
+DETERMINED_GAMES_PLAYED =0
+GREEDY_GAMES_PLAYED = 0
+SMART_GREEDY_GAMES_PLAYED = 0
 #CURRENT ACTIVIATION FUNCTION
 def relu(Function_Input):
     return np.maximum(0.0,Function_Input)
@@ -45,14 +47,34 @@ def InitializeNeuralNetworkWB():
     return weights,bias,functions
 
 def play_game(playerA):
-    playerB = RandomPlayer()
+    randomPlayer = RandomPlayer()
+    determinedPlayer = DeterminedPlayer()
+    greedyPlayer = GreedyPlayer()
+    smartGreedy = SmartGreedyPlayer()
     PlayerAverageScore = []
     EnemyAverageScore = []
-    for i in range(NO_OF_GAMES_FOR_FITNESS):
-        game = CompromiseGame(playerA,playerB,30,10,"s")
-        score = game.play()
-        PlayerAverageScore.append(score[0])
-        EnemyAverageScore.append(score[1])
+    Total_Games = RANDOM_GAMES_PLAYED + DETERMINED_GAMES_PLAYED + GREEDY_GAMES_PLAYED + SMART_GREEDY_GAMES_PLAYED
+    for i in range(Total_Games):
+        for x in range(RANDOM_GAMES_PLAYED):
+            game = CompromiseGame(playerA,randomPlayer,30,10,"s")
+            score = game.play()
+            PlayerAverageScore.append(score[0])
+            EnemyAverageScore.append(score[1])
+        # for y in range(DETERMINED_GAMES_PLAYED):
+        #     game = CompromiseGame(playerA,determinedPlayer,30,10,"s")
+        #     score = game.play()
+        #     PlayerAverageScore.append(score[0])
+        #     EnemyAverageScore.append(score[1])
+        # for z in range(GREEDY_GAMES_PLAYED):
+        #     game = CompromiseGame(playerA,greedyPlayer,30,10,"s")
+        #     score = game.play()
+        #     PlayerAverageScore.append(score[0])
+        #     EnemyAverageScore.append(score[1])
+        # for n in range(SMART_GREEDY_GAMES_PLAYED):
+        #     game = CompromiseGame(playerA,smartGreedy,30,10,"s")
+        #     score = game.play()
+        #     PlayerAverageScore.append(score[0])
+        #     EnemyAverageScore.append(score[1])
     PlayerAverage = statistics.mean(PlayerAverageScore)
     EnemyAverage = statistics.mean(EnemyAverageScore)
     FitnessScore = PlayerAverage / EnemyAverage
@@ -148,7 +170,7 @@ def Mutation(Population,GenerationCount,generation):
     MR = 1 - (GenerationCount/GENERATIONS_COUNT)
     NoOfMutatedPopulation = MR * TotalPopulaton
     mutation_pool = BiasedRoluetteSelection(generation)[0]
-    for x in range(round(NoOfMutatedPopulation)):
+    for x in range(int(TotalPopulaton)):
         MutatedChild = np.random.choice(mutation_pool,1,replace=False) #Pick unique children to mutate 
         NeuralObject = MutatedChild[0].getNN()
         Weights = np.copy(NeuralObject.Weights)
@@ -173,12 +195,11 @@ def train():
     FitnessScoreY = []
     bpY = []
     GenerationCountX = []
-    GenerationCount = 0
     for x in range(GENERATIONS_COUNT): #Train for a X generations.
-        GenerationCount += 1
         Generation_File = open(CURRENT_GENERATION_FILE,"rb")
         generation = pickle.load(Generation_File)
-        generation.pop()
+        currentGeneration = generation.pop()
+        GenerationCount = currentGeneration + 1
         Generation_File.close()
         #Save Best Player From Prievous Generation
         OrderedGeneration = sorted(generation, key=lambda x: x.FitnessScore, reverse=True)
@@ -195,7 +216,7 @@ def train():
         BestPlayer_File.close()
         #Generate New Generation
         NewGeneration = AddElite(generation)
-        NewGeneration = OnePointCrossover(generation,GenerationCount,NewGeneration)
+       # NewGeneration = OnePointCrossover(generation,GenerationCount,NewGeneration)
         NewGeneration = Mutation(NewGeneration,GenerationCount,generation)
         #Assign Fitness Scores To Next Generation
         with Pool() as pool:
@@ -294,3 +315,4 @@ def PrintBenchmark(RandomPlayerWL,DeterminedPlayerWL,GreedyPlayerWL,SmartGreedyP
 
 
 main()
+#test()

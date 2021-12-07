@@ -1,3 +1,4 @@
+
 import numpy as np
 from numpy.lib.function_base import average
 from numpy.random.mtrand import rand
@@ -8,14 +9,14 @@ import random
 import statistics
 import matplotlib.pyplot as plt
 import sys
-from multiprocessing import Pool,cpu_count, pool
+from multiprocessing import Pool
 
 ##CONSTANT VARIABLES - Paramaters for the NN 
 INPUT_NEURONS = 27
 HLAYER_NEURONS = 15
 OUTPUT_NEURONS = 9
-CURRENT_GENERATION_FILE = "Generations/GENERATION_V3_COMP_LP_RANDOM_PLAYER%.pkl"
-CURRENT_BESTPLAYER_FILE = "BestPlayer/BP_V3_COMP_LP_RANDOM_PLAYER%.pkl"
+CURRENT_GENERATION_FILE = "Generations/GENERATION_V3_COMP_LP_C_MULTIPLE_PLAYER_EQUAL_GAMES%.pkl"
+CURRENT_BESTPLAYER_FILE = "BestPlayer/BP_V3_COMP_LP_C_MULTIPLE_PLAYER_EQUAL_GAMES%.pkl"
 POPULATION_SIZE = 100
 ELITE_PLAYER_PERCANTAGE = 10
 NEURON_MUTATION_CHANCE = 0.40
@@ -23,10 +24,10 @@ GENERATIONS_COUNT = 100
 PARENTS_IN_GENE_POOL = 20
 #Ensures a more accurate fitness score so a lucky game != lucky fitness when actually genes are bad.
 #NO_OF_GAMES_FOR_FITNESS = 20 #Remeber this value is multiplied by 4 for each player
-RANDOM_GAMES_PLAYED = 100
-DETERMINED_GAMES_PLAYED =0
-GREEDY_GAMES_PLAYED = 0
-SMART_GREEDY_GAMES_PLAYED = 0
+RANDOM_GAMES_PLAYED = 20
+DETERMINED_GAMES_PLAYED = 30
+GREEDY_GAMES_PLAYED = 15
+SMART_GREEDY_GAMES_PLAYED = 5
 #CURRENT ACTIVIATION FUNCTION
 def relu(Function_Input):
     return np.maximum(0.0,Function_Input)
@@ -53,28 +54,26 @@ def play_game(playerA):
     smartGreedy = SmartGreedyPlayer()
     PlayerAverageScore = []
     EnemyAverageScore = []
-    Total_Games = RANDOM_GAMES_PLAYED + DETERMINED_GAMES_PLAYED + GREEDY_GAMES_PLAYED + SMART_GREEDY_GAMES_PLAYED
-    for i in range(Total_Games):
-        for x in range(RANDOM_GAMES_PLAYED):
-            game = CompromiseGame(playerA,randomPlayer,30,10,"s")
-            score = game.play()
-            PlayerAverageScore.append(score[0])
-            EnemyAverageScore.append(score[1])
-        # for y in range(DETERMINED_GAMES_PLAYED):
-        #     game = CompromiseGame(playerA,determinedPlayer,30,10,"s")
-        #     score = game.play()
-        #     PlayerAverageScore.append(score[0])
-        #     EnemyAverageScore.append(score[1])
-        # for z in range(GREEDY_GAMES_PLAYED):
-        #     game = CompromiseGame(playerA,greedyPlayer,30,10,"s")
-        #     score = game.play()
-        #     PlayerAverageScore.append(score[0])
-        #     EnemyAverageScore.append(score[1])
-        # for n in range(SMART_GREEDY_GAMES_PLAYED):
-        #     game = CompromiseGame(playerA,smartGreedy,30,10,"s")
-        #     score = game.play()
-        #     PlayerAverageScore.append(score[0])
-        #     EnemyAverageScore.append(score[1])
+    for x in range(RANDOM_GAMES_PLAYED):
+        game = CompromiseGame(playerA,randomPlayer,30,10,"s")
+        score = game.play()
+        PlayerAverageScore.append(score[0])
+        EnemyAverageScore.append(score[1])
+    for y in range(DETERMINED_GAMES_PLAYED):
+        game = CompromiseGame(playerA,determinedPlayer,30,10,"s")
+        score = game.play()
+        PlayerAverageScore.append(score[0])
+        EnemyAverageScore.append(score[1])
+    for z in range(GREEDY_GAMES_PLAYED):
+        game = CompromiseGame(playerA,greedyPlayer,30,10,"s")
+        score = game.play()
+        PlayerAverageScore.append(score[0])
+        EnemyAverageScore.append(score[1])
+    for n in range(SMART_GREEDY_GAMES_PLAYED):
+        game = CompromiseGame(playerA,smartGreedy,30,10,"s")
+        score = game.play()
+        PlayerAverageScore.append(score[0])
+        EnemyAverageScore.append(score[1])
     PlayerAverage = statistics.mean(PlayerAverageScore)
     EnemyAverage = statistics.mean(EnemyAverageScore)
     FitnessScore = PlayerAverage / EnemyAverage
@@ -103,12 +102,19 @@ def main():
 ##NOTE: In This Method The Same Object Can Be Selected Twice
 def BiasedRoluetteSelection(generation):
     RawFitnessArray = []
+    #Generate Mating Pool
     for chromosone in generation:
         RawFitnessArray.append(chromosone.FitnessScore)
     RawFitnessArray = np.array(RawFitnessArray) #Convert to NP array
     SelectionChance = RawFitnessArray / np.sum(RawFitnessArray)
     SelectedPopulation = [np.random.choice(generation,PARENTS_IN_GENE_POOL,p=SelectionChance)] #Here we select X parents from our objects with objects with higher fitness being selected.
-    return SelectedPopulation
+    #Generate Parent Selection Probs i.e an Bias to ensure our better parents are picked more often.
+    ParentFitness = []
+    for parent in SelectedPopulation:
+        ParentFitness.append(parent.FitnessScore)
+    ParentFitness = np.array(ParentFitness)
+    ParentSelectionChance = ParentFitness / np.sum(ParentFitness)
+    return SelectedPopulation,ParentSelectionChance
 
 #Here we crossover the weights and biases of neurons from each layer ranging from 1-N-1 N=No of Neurons
 def PerformOnePointCrossovers(Parent1Weight,Parent2Weight,Parent1Bias,Parent2Bias):
@@ -125,14 +131,14 @@ def OnePointCrossover(generation,GenerationCount,NewGeneration):
     TotalPopulaton = POPULATION_SIZE - (ELITE_PLAYER_PERCANTAGE * POPULATION_SIZE / 100)
     cr = GenerationCount/GENERATIONS_COUNT
     c = cr * TotalPopulaton
-    matingPool = BiasedRoluetteSelection(generation)
+    matingPool,ParentSelectionProbability = BiasedRoluetteSelection(generation)
     matingPool = np.array(matingPool).flatten()
     Layers = []
-    for i in range(round(c)): #Produce 90 children every crossover produces 2 children hence we do 45 crossovers.
+    for i in range(round(c)): 
         ChildFunctions = []
         Child1Weights = []
         Child1Bias = []
-        SelectedParents = np.array([np.random.choice(matingPool,2)]).flatten() #Here the same parent avoids being selected twice NOTE: if somehow 2 of the same object are selected there is a chance that 2 genetically identical parents can be selecte
+        SelectedParents = np.array([np.random.choice(matingPool,2,replace=False,p=ParentSelectionProbability)]).flatten() #Here the same parent avoids being selected twice NOTE: if somehow 2 of the same object are selected there is a chance that 2 genetically identical parents can be selecte
         #Get the layers of both parents.
         for parent in SelectedParents:
             NeuralObject = parent.getNN()
@@ -167,11 +173,10 @@ def AddElite(generation):
 #SOURCE: https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwiaqKulkcj0AhUCQEEAHWEoB0gQFnoECAoQAQ&url=https%3A%2F%2Fwww.mdpi.com%2F2078-2489%2F10%2F12%2F390%2Fpdf&usg=AOvVaw2uUvABCH2wTtCCVeDF8Vlp
 def Mutation(Population,GenerationCount,generation):
     TotalPopulaton = POPULATION_SIZE - (ELITE_PLAYER_PERCANTAGE * POPULATION_SIZE / 100)
-    MR = 1 - (GenerationCount/GENERATIONS_COUNT)
+    MR = GenerationCount/GENERATIONS_COUNT
     NoOfMutatedPopulation = MR * TotalPopulaton
-    mutation_pool = BiasedRoluetteSelection(generation)[0]
-    for x in range(int(TotalPopulaton)):
-        MutatedChild = np.random.choice(mutation_pool,1,replace=False) #Pick unique children to mutate 
+    for x in range(round(NoOfMutatedPopulation)):
+        MutatedChild = np.random.choice(Population,1,replace=False) #Pick unique children to mutate 
         NeuralObject = MutatedChild[0].getNN()
         Weights = np.copy(NeuralObject.Weights)
         Biases = np.copy(NeuralObject.Biases)
@@ -216,7 +221,7 @@ def train():
         BestPlayer_File.close()
         #Generate New Generation
         NewGeneration = AddElite(generation)
-       # NewGeneration = OnePointCrossover(generation,GenerationCount,NewGeneration)
+        NewGeneration = OnePointCrossover(generation,GenerationCount,NewGeneration)
         NewGeneration = Mutation(NewGeneration,GenerationCount,generation)
         #Assign Fitness Scores To Next Generation
         with Pool() as pool:

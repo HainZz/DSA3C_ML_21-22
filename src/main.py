@@ -1,4 +1,5 @@
 
+from os import replace
 import numpy as np
 from numpy.lib.function_base import average
 from numpy.random.mtrand import rand
@@ -17,20 +18,22 @@ HLAYER_NEURONS = 15
 OUTPUT_NEURONS = 9
 CURRENT_GENERATION_FILE = "Generations/GENERATION_V3_COMP_LP_C_MULTIPLE_PLAYER_EQUAL_GAMES%.pkl"
 CURRENT_BESTPLAYER_FILE = "BestPlayer/BP_V3_COMP_LP_C_MULTIPLE_PLAYER_EQUAL_GAMES%.pkl"
-POPULATION_SIZE = 100
-ELITE_PLAYER_PERCANTAGE = 10
+POPULATION_SIZE = 1000
+ELITE_PLAYER_PERCANTAGE = 10 #This passes the top 100 
 NEURON_MUTATION_CHANCE = 0.40
 GENERATIONS_COUNT = 100
-PARENTS_IN_GENE_POOL = 20
 #Ensures a more accurate fitness score so a lucky game != lucky fitness when actually genes are bad.
 #NO_OF_GAMES_FOR_FITNESS = 20 #Remeber this value is multiplied by 4 for each player
 RANDOM_GAMES_PLAYED = 20
-DETERMINED_GAMES_PLAYED = 30
-GREEDY_GAMES_PLAYED = 15
-SMART_GREEDY_GAMES_PLAYED = 5
 #CURRENT ACTIVIATION FUNCTION
 def relu(Function_Input):
     return np.maximum(0.0,Function_Input)
+
+##SOURCE: https://vidyasheela.com/post/leaky-relu-activation-function-with-python-code
+def leaky_relu(Function_Input):
+    output = [max(0.05*value,value) for value in Function_Input]
+    return np.array(output,dtype=float)
+
 
 #This function uses HE initialization
 ##SOURCE: https://towardsdatascience.com/weight-initialization-techniques-in-neural-networks-26c649eb3b78
@@ -44,14 +47,11 @@ def InitializeNeuralNetworkWB():
         weights[n] = LayerWeights * np.sqrt(2/len(LayerWeights-1)) # * each weight with the sqrt of 2/size of layer - 1#
         n+= 1
     bias = np.array([np.zeros(HLAYER_NEURONS),np.zeros(OUTPUT_NEURONS)],dtype=object) #Initialize bias of 0
-    functions = np.full((2),relu) #Fill our functions list with all RELU for now. We can experiment using a combination of functions later
+    functions = np.full((2),leaky_relu) #Fill our functions list with all RELU for now. We can experiment using a combination of functions later
     return weights,bias,functions
 
 def play_game(playerA):
     randomPlayer = RandomPlayer()
-    determinedPlayer = DeterminedPlayer()
-    greedyPlayer = GreedyPlayer()
-    smartGreedy = SmartGreedyPlayer()
     PlayerAverageScore = []
     EnemyAverageScore = []
     for x in range(RANDOM_GAMES_PLAYED):
@@ -59,21 +59,21 @@ def play_game(playerA):
         score = game.play()
         PlayerAverageScore.append(score[0])
         EnemyAverageScore.append(score[1])
-    for y in range(DETERMINED_GAMES_PLAYED):
-        game = CompromiseGame(playerA,determinedPlayer,30,10,"s")
-        score = game.play()
-        PlayerAverageScore.append(score[0])
-        EnemyAverageScore.append(score[1])
-    for z in range(GREEDY_GAMES_PLAYED):
-        game = CompromiseGame(playerA,greedyPlayer,30,10,"s")
-        score = game.play()
-        PlayerAverageScore.append(score[0])
-        EnemyAverageScore.append(score[1])
-    for n in range(SMART_GREEDY_GAMES_PLAYED):
-        game = CompromiseGame(playerA,smartGreedy,30,10,"s")
-        score = game.play()
-        PlayerAverageScore.append(score[0])
-        EnemyAverageScore.append(score[1])
+    # for y in range(DETERMINED_GAMES_PLAYED):
+    #     game = CompromiseGame(playerA,determinedPlayer,30,10,"s")
+    #     score = game.play()
+    #     PlayerAverageScore.append(score[0])
+    #     EnemyAverageScore.append(score[1])
+    # for z in range(GREEDY_GAMES_PLAYED):
+    #     game = CompromiseGame(playerA,greedyPlayer,30,10,"s")
+    #     score = game.play()
+    #     PlayerAverageScore.append(score[0])
+    #     EnemyAverageScore.append(score[1])
+    # for n in range(SMART_GREEDY_GAMES_PLAYED):
+    #     game = CompromiseGame(playerA,smartGreedy,30,10,"s")
+    #     score = game.play()
+    #     PlayerAverageScore.append(score[0])
+    #     EnemyAverageScore.append(score[1])
     PlayerAverage = statistics.mean(PlayerAverageScore)
     EnemyAverage = statistics.mean(EnemyAverageScore)
     FitnessScore = PlayerAverage / EnemyAverage
@@ -100,21 +100,16 @@ def main():
 
 ##CURRENT SELECTION METHOD = https://en.wikipedia.org/wiki/Fitness_proportionate_selection
 ##NOTE: In This Method The Same Object Can Be Selected Twice
-def BiasedRoluetteSelection(generation):
+def BiasedRoluetteSelection(generation,NoOfParents):
     RawFitnessArray = []
-    #Generate Mating Pool
-    for chromosone in generation:
+    #Get 2 parents with higher fitness parents taking prio
+    OrderedGeneration = sorted(generation, key=lambda x: x.FitnessScore, reverse=True)
+    for chromosone in OrderedGeneration:
         RawFitnessArray.append(chromosone.FitnessScore)
     RawFitnessArray = np.array(RawFitnessArray) #Convert to NP array
     SelectionChance = RawFitnessArray / np.sum(RawFitnessArray)
-    SelectedPopulation = [np.random.choice(generation,PARENTS_IN_GENE_POOL,p=SelectionChance)] #Here we select X parents from our objects with objects with higher fitness being selected.
-    #Generate Parent Selection Probs i.e an Bias to ensure our better parents are picked more often.
-    ParentFitness = []
-    for parent in SelectedPopulation:
-        ParentFitness.append(parent.FitnessScore)
-    ParentFitness = np.array(ParentFitness)
-    ParentSelectionChance = ParentFitness / np.sum(ParentFitness)
-    return SelectedPopulation,ParentSelectionChance
+    SelectedPopulation = [np.random.choice(OrderedGeneration,NoOfParents,p=SelectionChance,replace=False)] #Here we select X parents from our objects with objects with higher fitness being selected.
+    return SelectedPopulation
 
 #Here we crossover the weights and biases of neurons from each layer ranging from 1-N-1 N=No of Neurons
 def PerformOnePointCrossovers(Parent1Weight,Parent2Weight,Parent1Bias,Parent2Bias):
@@ -127,20 +122,21 @@ def PerformOnePointCrossovers(Parent1Weight,Parent2Weight,Parent1Bias,Parent2Bia
     return Parent1Weight,Parent1Bias
 
 
-def OnePointCrossover(generation,GenerationCount,NewGeneration):
+def OnePointCrossover(generation,GenerationCount):
+    NewGeneration = []
     TotalPopulaton = POPULATION_SIZE - (ELITE_PLAYER_PERCANTAGE * POPULATION_SIZE / 100)
-    cr = GenerationCount/GENERATIONS_COUNT
+    #cr = 1 - (GenerationCount/GENERATIONS_COUNT)
+    cr = 0.9
     c = cr * TotalPopulaton
-    matingPool,ParentSelectionProbability = BiasedRoluetteSelection(generation)
-    matingPool = np.array(matingPool).flatten()
     Layers = []
+    #Get offspring made by crossover
     for i in range(round(c)): 
         ChildFunctions = []
         Child1Weights = []
         Child1Bias = []
-        SelectedParents = np.array([np.random.choice(matingPool,2,replace=False,p=ParentSelectionProbability)]).flatten() #Here the same parent avoids being selected twice NOTE: if somehow 2 of the same object are selected there is a chance that 2 genetically identical parents can be selecte
+        SelectedParents =  BiasedRoluetteSelection(generation,2)#Call function to select parent
         #Get the layers of both parents.
-        for parent in SelectedParents:
+        for parent in SelectedParents[0]:
             NeuralObject = parent.getNN()
             LayerObjects = NeuralObject.getLayers()
             Layers.append(LayerObjects)
@@ -159,28 +155,33 @@ def OnePointCrossover(generation,GenerationCount,NewGeneration):
         #Creation of children based of arrays from crossover
         Child1Object = NNPlayer(np.array(Child1Weights,dtype=object),np.array(Child1Bias,dtype=object),np.array(ChildFunctions,dtype=object))
         NewGeneration.append(Child1Object)
+    #Get offspring not made by crossover i.e Simply cloning a selected parent
+    for i in range (int(TotalPopulaton-round(c))):
+        SelectedParent = BiasedRoluetteSelection(generation,1)
+        NewGeneration.append(SelectedParent[0][0])
     return NewGeneration
 
 ##SOURCE: https://stackoverflow.com/questions/403421/how-to-sort-a-list-of-objects-based-on-an-attribute-of-the-objects
 ## This function aims to take N of the fittest parents and clone them into the next generation so we dont lose good genes. These cannot be mutated to ensure we dont lose a good gene with a bad mutation
-def AddElite(generation):
+def AddElite(generation,NewGeneration):
     OrderedGeneration = sorted(generation, key=lambda x: x.FitnessScore, reverse=True) #Sort objects based off fitness score
     NoOFElite = ELITE_PLAYER_PERCANTAGE * POPULATION_SIZE / 100 #Get 20% of the population size
-    NewGeneration = OrderedGeneration[:int(NoOFElite)] # Take N of the top objects from the OrderedGeneration this forms first N of our new generation
+    ElitePlayers = OrderedGeneration[:int(NoOFElite)] # Take N of the top objects from the OrderedGeneration this forms first N of our new generation
+    NewGeneration = NewGeneration + ElitePlayers
     return NewGeneration
 
 #Currently every Bias + Weight within the children have a chance to mutate. 
 #SOURCE: https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwiaqKulkcj0AhUCQEEAHWEoB0gQFnoECAoQAQ&url=https%3A%2F%2Fwww.mdpi.com%2F2078-2489%2F10%2F12%2F390%2Fpdf&usg=AOvVaw2uUvABCH2wTtCCVeDF8Vlp
-def Mutation(Population,GenerationCount,generation):
+def Mutation(Population,GenerationCount):
     TotalPopulaton = POPULATION_SIZE - (ELITE_PLAYER_PERCANTAGE * POPULATION_SIZE / 100)
-    MR = GenerationCount/GENERATIONS_COUNT
+    #MR = GenerationCount/GENERATIONS_COUNT
+    MR = 0.9
     NoOfMutatedPopulation = MR * TotalPopulaton
-    for x in range(round(NoOfMutatedPopulation)):
-        MutatedChild = np.random.choice(Population,1,replace=False) #Pick unique children to mutate 
-        NeuralObject = MutatedChild[0].getNN()
+    ChildrenToMutate = np.random.choice(Population,size=int(NoOfMutatedPopulation),replace=False) #Ensure we dont pick the same chromosone to be mutated
+    for child in ChildrenToMutate:
+        NeuralObject = child.getNN()
         Weights = np.copy(NeuralObject.Weights)
         Biases = np.copy(NeuralObject.Biases)
-        Functions = np.copy(NeuralObject.Functions)
         for LayerWeightIndex,Layer in enumerate(Weights):
             for NeuronIndex,Neuron in enumerate(Layer):
                 for WeightIndex,Weight in enumerate(Neuron):
@@ -190,8 +191,9 @@ def Mutation(Population,GenerationCount,generation):
             for BiasIndex,bias in enumerate(LayerBias):
                 if random.random() < NEURON_MUTATION_CHANCE:
                     Biases[LayerBiasIndex][BiasIndex] = bias - random.uniform(-1.0,1.0)
-        MutatedOffSpring = NNPlayer(Weights,Biases,Functions)
-        Population.append(MutatedOffSpring)
+        NeuralObject.Weights = Weights
+        NeuralObject.Biases = Biases
+        TestObject = child.getNN()
     return Population
 ## TODO 03/12/2021: Introduce Multi-Parent Crossover,Two Point Crossover,Universal Crossover,
 #                   New Selection Method, Gaussian Mutation, Varying Crossover/Mutation Rates
@@ -220,9 +222,10 @@ def train():
         pickle.dump(BestPlayer,BestPlayer_File)
         BestPlayer_File.close()
         #Generate New Generation
-        NewGeneration = AddElite(generation)
-        NewGeneration = OnePointCrossover(generation,GenerationCount,NewGeneration)
-        NewGeneration = Mutation(NewGeneration,GenerationCount,generation)
+        NewGeneration = OnePointCrossover(generation,GenerationCount)
+        NewGeneration = Mutation(NewGeneration,GenerationCount)
+        NewGeneration = AddElite(generation,NewGeneration)
+        print(len(NewGeneration))
         #Assign Fitness Scores To Next Generation
         with Pool() as pool:
             NewGeneration = pool.map(play_game,NewGeneration)

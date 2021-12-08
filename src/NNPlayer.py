@@ -22,10 +22,7 @@ class NNPlayer:
         Row = np.argmax(Result[2:5])
         Column = np.argmax(Result[5:8])
         Move = [Grid,Row,Column]
-        # Counter = 0
-        # for move in Result:
-        #     Result[Counter] = int(math.floor(move))
-        #     Counter += 1
+        Move = list(map(int,Move))
         return Move
 
     def getNN(self):

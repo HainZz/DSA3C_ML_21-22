@@ -11,6 +11,7 @@ import statistics
 import matplotlib.pyplot as plt
 import sys
 from multiprocessing import Pool
+from itertools import repeat
 
 ##CONSTANT VARIABLES - Paramaters for the NN 
 INPUT_NEURONS = 27
@@ -90,7 +91,7 @@ def main():
         playerA = NNPlayer(weights,biases,functions)
         InitialPopulation.append(playerA) #Every object will have an fitness score associated with it within the generation.
     with Pool() as pool:
-        InitialPopulation = pool.map(play_game,InitialPopulation)
+        InitialPopulation = pool.starmap(play_game,zip(InitialPopulation,repeat(0)))
     ##PICKLE Initial Generation
     #By saving the generations if we stop training we can continue training using the existing model rather than restarting every time.
     pickle_file = open(CURRENT_GENERATION_FILE,"wb")
@@ -237,7 +238,7 @@ def train():
         NewGeneration = AddElite(generation,NewGeneration)
         #Assign Fitness Scores To Next Generation
         with Pool() as pool:
-            NewGeneration = pool.map(play_game,args=(NewGeneration,GenerationCount))
+            NewGeneration = pool.starmap(play_game,zip(NewGeneration,repeat(GenerationCount)))
         #Pickle Next Generation
         NewGeneration.append(GenerationCount)
         pickle_file = open(CURRENT_GENERATION_FILE,"wb")

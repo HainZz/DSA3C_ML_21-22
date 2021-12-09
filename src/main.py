@@ -23,11 +23,14 @@ CURRENT_BESTPLAYER_FILE = "BestPlayer/FINAL_BP.pkl"
 POPULATION_SIZE = 1000
 ELITE_PLAYER_PERCANTAGE = 10 #This passes the top 100 
 NEURON_MUTATION_CHANCE = 0.40
-GENERATIONS_COUNT = 10000
+GENERATIONS_COUNT = 250
 TOP_PARENT_PERCENTILE = 10
 #Ensures a more accurate fitness score so a lucky game != lucky fitness when actually genes are bad.
 #NO_OF_GAMES_FOR_FITNESS = 20 #Remeber this value is multiplied by 4 for each player
-GAMES_PLAYED = 20
+RANDOM_GAMES_PLAYED = 10
+DETERMINED_GAMES_PLAYED = 10
+GREEDY_GAMES_PLAYED = 10
+SMART_GREEDY_GAMES_PLAYED = 10
 
 def relu(Function_Input):
     return np.maximum(0.0,Function_Input)
@@ -55,24 +58,31 @@ def InitializeNeuralNetworkWB():
     return weights,bias,functions
 
 def play_game(playerA,GenerationCount):
-    if GenerationCount <= 2500:
-        playerB = RandomPlayer()
-    elif 2501 <= GenerationCount <= 5000:
-        playerB = DeterminedPlayer()
-    elif 5001 <= GenerationCount <= 7500:
-        playerB = GreedyPlayer()
-    else:
-        playerB = SmartGreedyPlayer()
+    randomPlayer = RandomPlayer()
+    determinedPlayer = DeterminedPlayer()
+    greedyPlayer = GreedyPlayer()
+    smartGreedy = SmartGreedyPlayer()    
     PlayerAverageScore = []
     EnemyAverageScore = []
-    RandomPlayerWL = 0
     #Loop for X games and append scores to arrayy
-    for x in range(GAMES_PLAYED):
-        game = CompromiseGame(playerA,playerB,30,10,"s")
+    game = CompromiseGame(playerA,randomPlayer,30,10,"s")
+    for x in range(RANDOM_GAMES_PLAYED):
         score = game.play()
-        ScoreDifference = score[0] - score[1]
-        if ScoreDifference > 0:
-            RandomPlayerWL += 1
+        PlayerAverageScore.append(score[0])
+        EnemyAverageScore.append(score[1])
+    game = CompromiseGame(playerA,determinedPlayer,30,10,"s")
+    for y in range(DETERMINED_GAMES_PLAYED):
+        score = game.play()
+        PlayerAverageScore.append(score[0])
+        EnemyAverageScore.append(score[1])
+    game = CompromiseGame(playerA,greedyPlayer,30,10,"s")
+    for i in range(GREEDY_GAMES_PLAYED):
+        score = game.play()
+        PlayerAverageScore.append(score[0])
+        EnemyAverageScore.append(score[1])
+    game = CompromiseGame(playerA,smartGreedy,30,10,"s")
+    for z in range(SMART_GREEDY_GAMES_PLAYED):
+        score = game.play()
         PlayerAverageScore.append(score[0])
         EnemyAverageScore.append(score[1])
     #Get average of player + opponent score divide these to get the average fitness

@@ -3,6 +3,7 @@ from os import replace
 import numpy as np
 from numpy.lib.function_base import average
 from numpy.random.mtrand import rand
+from NNLayer import Layer
 from NNPlayer import NNPlayer
 from CompromiseGame import DeterminedPlayer, GreedyPlayer, RandomPlayer,CompromiseGame, SmartGreedyPlayer
 import pickle
@@ -13,6 +14,7 @@ import sys
 from multiprocessing import Pool
 from itertools import repeat
 import Player1925723
+import json
 
 ##CONSTANT VARIABLES - Paramaters for the NN 
 INPUT_NEURONS = 27
@@ -141,7 +143,7 @@ def PerformOnePointCrossovers(Parent1Weight,Parent2Weight,Parent1Bias,Parent2Bia
     #Gets the number of neurons within a layer this forms our maximum (-1 is for indexing)
     max = len(Parent1Weight)
     NoOfNeuronsToCross = np.random.randint(max)
-    #Create a copy so we make sure we transfer original genes from Parent1Weights not new genes
+    #Exchange neurons forming the crossover process.
     Parent1Weight[NoOfNeuronsToCross:max] = Parent2Weight[NoOfNeuronsToCross:max]
     Parent1Bias[NoOfNeuronsToCross:max] = Parent2Bias[NoOfNeuronsToCross:max]
     return Parent1Weight,Parent1Bias
@@ -203,19 +205,15 @@ def Mutation(Population):
     ChildrenToMutate = np.random.choice(Population,size=int(NoOfMutatedPopulation),replace=False) #Ensure we dont pick the same chromosone to be mutated
     for child in ChildrenToMutate:
         NeuralObject = child.getNN()
-        Weights = np.copy(NeuralObject.Weights)
-        Biases = np.copy(NeuralObject.Biases)
-        for LayerWeightIndex,Layer in enumerate(Weights):
-            for NeuronIndex,Neuron in enumerate(Layer):
-                for WeightIndex,Weight in enumerate(Neuron):
-                    if random.random() < NEURON_MUTATION_CHANCE:
-                        Weights[LayerWeightIndex][NeuronIndex][WeightIndex] = Weight - random.uniform(-1.0,1.0)
-        for LayerBiasIndex,LayerBias in enumerate(Biases):
-            for BiasIndex,bias in enumerate(LayerBias):
-                if random.random() < NEURON_MUTATION_CHANCE:
-                    Biases[LayerBiasIndex][BiasIndex] = bias - random.uniform(-1.0,1.0)
-        NeuralObject.Weights = Weights
-        NeuralObject.Biases = Biases
+        LayersObject = NeuralObject.getLayers()
+        for layer in LayersObject:
+            Matrix = layer.getMatrix()
+            for NeuronCount,neuron in enumerate(Matrix):
+                for WeightCount,weight in enumerate(neuron):
+                    layer.weights[NeuronCount][WeightCount] = weight + np.random.uniform(-1.0,1.0)
+            Biases = layer.getBiasVector()
+            for BiasCount,bias in enumerate(Biases):
+                layer.bias[BiasCount] = bias + np.random.uniform(-1.0,1.0)
     return Population
 
 def train():
@@ -282,9 +280,9 @@ def test():
     SmartGreedyPlayerAverageScore = []
     #Get Best Player From Pickle File
     player_file = open(CURRENT_BESTPLAYER_FILE,"rb")
-    #playerA = pickle.load(player_file)
-    playerA = Player1925723.NNPlayer()
+    playerA = pickle.load(player_file)
     player_file.close()
+    #playerA = Player1925723.NNPlayer()
     #Play each player 1000 times collect W-L + scores NOTE: Potential Ties Are Counted As Losses 
     for i in range (1000):
         ##Play Against Random Player
@@ -344,24 +342,23 @@ def PrintBenchmark(RandomPlayerWL,DeterminedPlayerWL,GreedyPlayerWL,SmartGreedyP
     print("--------------------------------------------")
 
 def extract():
+    playerDict = {}
     player_file = open(CURRENT_BESTPLAYER_FILE,"rb")
     player = pickle.load(player_file)
     player_file.close()
-    NeuralObject = player.getNN()
-    print(NeuralObject.Weights[0])
-    print("\n\n")
-    print(NeuralObject.Biases)
-    print("\n\n")
-    print(NeuralObject.Functions)
+    NeuralObject=player.getNN()
+    Layers=NeuralObject.getLayers()
+    NewWeight = []
+    NewBias = []
+    for layer in Layers:
+        NewWeight.append(layer.getMatrix().tolist())
+        NewBias.append(layer.getBiasVector().tolist())
+    playerDict["BestPlayer"] = {'Weights':NewWeight,'Bias':NewBias}
+    with open('BestPlayer.json','w') as f:
+        json.dump(playerDict,f)
 
-def Test():
-    playerA = Player1925723.NNPlayer()
-    playerB = RandomPlayer()
-    game = CompromiseGame(playerA,playerB,30,10,"s")
-    game.play()
-    print("HELLO")
 
-#Test()
+
 #extract()
 #main()
 test()

@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import sys
 from multiprocessing import Pool
 from itertools import repeat
+import Player1925723
 
 ##CONSTANT VARIABLES - Paramaters for the NN 
 INPUT_NEURONS = 27
@@ -281,7 +282,8 @@ def test():
     SmartGreedyPlayerAverageScore = []
     #Get Best Player From Pickle File
     player_file = open(CURRENT_BESTPLAYER_FILE,"rb")
-    playerA = pickle.load(player_file)
+    #playerA = pickle.load(player_file)
+    playerA = Player1925723.NNPlayer()
     player_file.close()
     #Play each player 1000 times collect W-L + scores NOTE: Potential Ties Are Counted As Losses 
     for i in range (1000):
@@ -341,6 +343,25 @@ def PrintBenchmark(RandomPlayerWL,DeterminedPlayerWL,GreedyPlayerWL,SmartGreedyP
     "\n AverageScore: ", statistics.mean(SmartGreedyAS))
     print("--------------------------------------------")
 
+def extract():
+    player_file = open(CURRENT_BESTPLAYER_FILE,"rb")
+    player = pickle.load(player_file)
+    player_file.close()
+    NeuralObject = player.getNN()
+    print(NeuralObject.Weights[0])
+    print("\n\n")
+    print(NeuralObject.Biases)
+    print("\n\n")
+    print(NeuralObject.Functions)
 
-main()
-#test()
+def Test():
+    playerA = Player1925723.NNPlayer()
+    playerB = RandomPlayer()
+    game = CompromiseGame(playerA,playerB,30,10,"s")
+    game.play()
+    print("HELLO")
+
+#Test()
+#extract()
+#main()
+test()

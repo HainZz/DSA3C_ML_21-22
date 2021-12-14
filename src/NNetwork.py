@@ -1,6 +1,6 @@
 
 from NNLayer import Layer
-import sys
+
 class NeuralNetwork:
     def __init__(self,Weights,Biases,Functions):
         self.Weights = Weights

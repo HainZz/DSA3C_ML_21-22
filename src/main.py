@@ -14,8 +14,8 @@ import json
 INPUT_NEURONS = 27
 HLAYER_NEURONS = 15
 OUTPUT_NEURONS = 9
-CURRENT_GENERATION_FILE = "Generations/FINAL_GEN.pkl"
-CURRENT_BESTPLAYER_FILE = "BestPlayer/FINAL_BP.pkl"
+CURRENT_GENERATION_FILE = "Generations/TEST_GEN.pkl"
+CURRENT_BESTPLAYER_FILE = "BestPlayer/TEST_BP.pkl"
 #GA Parameters
 POPULATION_SIZE = 1000
 ELITE_PLAYER_PERCANTAGE = 10 #This passes the top 100 
@@ -258,7 +258,6 @@ def Plot(X,Y,bpy):
     plt.xlabel("Generations")
     plt.ylabel("Average Fitness Score")
     plt.title("Average Fitness Score Over Generations")
-    plt.legend([])
     plt.show()
 
 #Designed as a benchmark for the Best Player
@@ -354,5 +353,5 @@ def extract():
 
 
 #extract()
-#main()
-test()
+main()
+#test()

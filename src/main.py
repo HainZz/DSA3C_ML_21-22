@@ -1,19 +1,13 @@
 
-from os import replace
 import numpy as np
-from numpy.lib.function_base import average
-from numpy.random.mtrand import rand
-from NNLayer import Layer
 from NNPlayer import NNPlayer
 from CompromiseGame import DeterminedPlayer, GreedyPlayer, RandomPlayer,CompromiseGame, SmartGreedyPlayer
 import pickle
-import random
 import statistics
 import matplotlib.pyplot as plt
-import sys
 from multiprocessing import Pool
 from itertools import repeat
-import Player1925723
+#import Player1925723
 import json
 
 ##CONSTANT VARIABLES - Paramaters for the NN 
